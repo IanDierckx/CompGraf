@@ -56,8 +56,8 @@ img::EasyImage Lines2D::drawLines(const int size) {
 
 	double schaalfactor = 0.95*(imageX/xrange);
 
-	double DCx = schaalfactor*((minX+maxX)/2);
-	double DCy = schaalfactor*((minY+maxY)/2);
+	double DCx = schaalfactor*(minX+maxX)/2;
+	double DCy = schaalfactor*(minY+maxY)/2;
 	double dx = (imageX/2)-DCx;
 	double dy = (imageY/2)-DCy;
 
@@ -78,8 +78,8 @@ img::EasyImage Lines2D::drawLines(const int size) {
 
 		img::Color lijnkleur = img::Color(red,green, blue);
 
-		img.draw_line(static_cast<unsigned int>(rint(newP1X)),static_cast<unsigned int>(rint(newP1Y)),
-				static_cast<unsigned int>(rint(newP2X)), static_cast<unsigned int>(rint(newP2Y)),
+		img.draw_line(static_cast<unsigned int>(floor(newP1X)),static_cast<unsigned int>(floor(newP1Y)),
+				static_cast<unsigned int>(floor(newP2X)), static_cast<unsigned int>(floor(newP2Y)),
 				lijnkleur);
 	}
 	return img;

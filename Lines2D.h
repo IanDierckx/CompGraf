@@ -51,7 +51,7 @@ class Lines2D {
 private:
 	vector<Line2D*> Lines;
 
-	vector<double> getMinMax();
+
 public:
 	img::EasyImage drawLines(const int size);
 
@@ -64,6 +64,8 @@ public:
 	void addLine(Line2D*);
 
 	Lines2D(vector<Line2D*> lines);
+
+	vector<double> getMinMax();
 };
 
 #endif /* LINES2D_H_ */

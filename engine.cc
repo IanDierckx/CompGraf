@@ -7,6 +7,8 @@
 #include <string>
 #include <cmath>
 #include "Lines2D.cpp"
+#include "l_parser.h"
+#include <algorithm>
 
 inline int roundToInt(double d) {
 	return static_cast<int>(std::round(d));
@@ -122,6 +124,120 @@ img::EasyImage EyeDraw(const ini::Configuration &configuration) {
 	return image;
 }
 
+img::EasyImage draw2DLines(const int size, Lines2D lines, img::Color backgroundColor) {
+
+	vector<double> maxmin = lines.getMinMax();
+	double maxX = maxmin[0];
+	double maxY = maxmin[1];
+	double minX = maxmin[2];
+	double minY = maxmin[3];
+	double xrange = maxX-minX;
+	double yrange = maxY-minY;
+	double imageX = size*(xrange/max(xrange,yrange));
+	double imageY = size*(yrange/max(xrange,yrange));
+
+	img::EasyImage img = img::EasyImage(imageX, imageY, backgroundColor);
+
+	double schaalfactor = 0.95*(imageX/xrange);
+
+	double DCx = schaalfactor*(minX+maxX)/2;
+	double DCy = schaalfactor*(minY+maxY)/2;
+	double dx = (imageX/2)-DCx;
+	double dy = (imageY/2)-DCy;
+
+	for(auto line:lines.getLines()) {
+		double newP1X = line->p1->x*schaalfactor;
+		double newP2X = line->p2->x*schaalfactor;
+		double newP1Y = line->p1->y*schaalfactor;
+		double newP2Y = line->p2->y*schaalfactor;
+
+		newP1X += dx;
+		newP2X += dx;
+		newP1Y += dy;
+		newP2Y += dy;
+
+		unsigned int red = static_cast<unsigned int>(rint(line->color->red*255));
+		unsigned int green = static_cast<unsigned int>(rint(line->color->green*255));
+		unsigned int blue = static_cast<unsigned int>(rint(line->color->blue*255));
+
+		img::Color lijnkleur = img::Color(red,green, blue);
+
+		img.draw_line(static_cast<unsigned int>(floor(newP1X)),static_cast<unsigned int>(floor(newP1Y)),
+				static_cast<unsigned int>(floor(newP2X)), static_cast<unsigned int>(floor(newP2Y)),
+				lijnkleur);
+	}
+	return img;
+}
+
+vector<Line2D*> parse_rule(char currentChar, LParser::LSystem2D& lSystem, vector<double> currentPoint, Color* lijnkleur, double current_angle, double angle_change) {
+	vector<Line2D*> lines;
+	string rule = lSystem.get_replacement(currentChar);
+	double currentX = currentPoint[0];
+	double currentY = currentPoint[1];
+	double angleRightNow = current_angle;
+	for (auto current:rule) {
+		if (current == '+') {
+			angleRightNow += angle_change;
+		} else if (current == '-') {
+			angleRightNow -= angle_change;
+		}else if (current != currentChar) {
+			vector<double> recursionPoint;
+			recursionPoint[0] = currentX;
+			recursionPoint[1] = currentY;
+			vector<Line2D*> recursionlines = parse_rule(current,lSystem,recursionPoint, lijnkleur, angleRightNow, angle_change);
+			for (Line2D* line:recursionlines) {
+				lines.push_back(line);
+			}
+		}else if (lSystem.draw(current)) {
+			Point2D* p1 = new Point2D(currentX, currentY);
+			currentX += cos(angleRightNow);
+			currentY += sin(angleRightNow);
+			Point2D* p2 = new Point2D(currentX, currentY);
+			lines.push_back(new Line2D(p1,p2,lijnkleur));
+		}
+		else {
+			currentX += cos(angleRightNow);
+			currentY += sin(angleRightNow);
+		}
+	}
+	return lines;
+}
+
+img::EasyImage generate2DLSys(const ini::Configuration &configuration) {
+	int size = configuration["General"]["size"].as_int_or_die();
+	vector<double> background = configuration["General"]["backgroundcolor"].as_double_tuple_or_die();
+	string inputfile = configuration["2DLSystem"]["inputfile"].as_string_or_die();
+	vector<double> lijnkleur = configuration["2DLSystem"]["color"].as_double_tuple_or_die();
+
+	img::Color backgroundColor = img::Color(background[0],background[1],background[2]);
+
+	LParser::LSystem2D lSystem;
+	ifstream input_stream(inputfile);
+	input_stream >> lSystem;
+	input_stream.close();
+
+	double starting_angle = lSystem.get_starting_angle()*(M_PI/180);
+	double angle = lSystem.get_angle()*(M_PI/180);
+
+	Color* lijnkleurColor = new Color(lijnkleur[0]*255, lijnkleur[1]*255, lijnkleur[2]*255);
+
+	vector<Line2D*> lines = parse_rule(lSystem.get_initiator()[0],lSystem,vector<double>(2,0),lijnkleurColor,starting_angle,angle);
+
+	Lines2D lines2D = Lines2D(lines);
+
+	img::EasyImage img = draw2DLines(size,lines2D,backgroundColor);
+
+//	for (auto line:lines) {
+//		delete line->color;
+//		delete line->p1;
+//		delete line->p2;
+//	}
+//
+//	delete lijnkleurColor;
+	return img;
+}
+
+
 
 img::EasyImage generate_image(const ini::Configuration &configuration)
 {
@@ -137,19 +253,10 @@ img::EasyImage generate_image(const ini::Configuration &configuration)
 		} else if (figure=="Eye") {
 			return EyeDraw(configuration);
 		}
-	} else if (typeString == "test") {
-		Color* col = new Color(0.5,0.1,0);
-		Point2D* p1 = new Point2D(1.5,1);
-		Point2D* p2 = new Point2D(5.8,1);
-		Point2D* p3 = new Point2D(5.3,1);
-		Point2D* p4 = new Point2D(5.3,5);
-		Line2D* line1 = new Line2D(p1,p2,col);
-		Line2D* line2 = new Line2D(p3,p4,col);
-		vector<Line2D*> linesvector = {line1, line2};
-		Lines2D lines = Lines2D(linesvector);
-		return lines.drawLines(500);
+	} else if (typeString == "2DLSystem") {
+		return generate2DLSys(configuration);
 	}
-	img::EasyImage img;
+	img::EasyImage img = img::EasyImage(10,10);
 	return img;
 }
 
