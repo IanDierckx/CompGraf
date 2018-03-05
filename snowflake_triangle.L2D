@@ -1,0 +1,22 @@
+Alphabet = {V, W, X, Y, Z}
+
+Draw = {
+	V -> 1,
+        W -> 1,
+        X -> 1,
+	Y -> 1,
+        Z -> 1
+}
+
+Rules = {
+	V -> "V",
+        W -> "+++X--V--ZVX+",
+        X -> "---W++V++YVW-",
+        Y -> "+ZVX--V--Z+++",
+        Z -> "-YVW++V++Y---"
+}
+
+Initiator     = "W"
+Angle         = 30
+StartingAngle = 90
+Iterations    = 6

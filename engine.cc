@@ -94,35 +94,6 @@ img::EasyImage QuarterCircle(const ini::Configuration &configuration) {
 	}
 	return image;
 }
-img::EasyImage EyeDraw(const ini::Configuration &configuration) {
-	const unsigned int width = configuration["ImageProperties"]["width"].as_int_or_die();
-	const unsigned int heigth = configuration["ImageProperties"]["height"].as_int_or_die();
-	const unsigned int aantalLijnen = configuration["LineProperties"]["nrLines"].as_int_or_die();
-	std::vector<double> kleurLijn = configuration["LineProperties"]["lineColor"].as_double_tuple_or_die();
-	std::vector<double> backgroundcolor = configuration["LineProperties"]["backgroundcolor"].as_double_tuple_or_die();
-	img::EasyImage image(width,heigth);
-	img::Color lijnKLeur;
-	lijnKLeur.red = kleurLijn[0]*255;
-	lijnKLeur.green = kleurLijn[1]*255;
-	lijnKLeur.blue = kleurLijn[2]*255;
-	img::Color achtergrond;
-	achtergrond.red = backgroundcolor[0]*255;
-	achtergrond.green = backgroundcolor[1]*255;
-	achtergrond.blue = backgroundcolor[2]*255;
-	for(unsigned int i = 0; i < width; i++) {
-		for(unsigned int j = 0; j < heigth; j++) {
-			image(i,j).red = achtergrond.red;
-			image(i,j).green = achtergrond.green;
-			image(i,j).blue = achtergrond.blue;
-		}
-	}
-	const unsigned int verticaleAfstand = heigth/(aantalLijnen-1);
-	const unsigned int horizontaleAfstand = width/(aantalLijnen-1);
-	for(unsigned int i = 0; i < aantalLijnen; i++) {
-		image.draw_line(horizontaleAfstand*i,heigth-1,0,verticaleAfstand*i,lijnKLeur);
-	}
-	return image;
-}
 
 img::EasyImage draw2DLines(const int size, Lines2D lines, img::Color backgroundColor) {
 
@@ -169,9 +140,27 @@ img::EasyImage draw2DLines(const int size, Lines2D lines, img::Color backgroundC
 	return img;
 }
 
-vector<Line2D*> parse_rule(char currentChar, LParser::LSystem2D& lSystem, vector<double> currentPoint, Color* lijnkleur, double current_angle, double angle_change) {
+string replaceRule(string currentRule, unsigned int currentIteration, LParser::LSystem2D& lSystem) {
+	string replacedRule = "";
+	for (char current:currentRule) {
+		if ((current == '+') or (current == '-')) {
+			replacedRule += current;
+		} else if (find(lSystem.get_alphabet().begin(),lSystem.get_alphabet().end(),current) != lSystem.get_alphabet().end()) {
+			replacedRule += lSystem.get_replacement(current);
+		}
+	}
+	if (currentIteration != lSystem.get_nr_iterations()) {
+		currentIteration += 1;
+		replacedRule = replaceRule(replacedRule,currentIteration,lSystem);
+	}
+	return replacedRule;
+}
+
+vector<Line2D*> parse_rule(LParser::LSystem2D& lSystem, vector<double> currentPoint, Color* lijnkleur, double current_angle, double angle_change) {
 	vector<Line2D*> lines;
-	string rule = lSystem.get_replacement(currentChar);
+	char initiatior = lSystem.get_initiator()[0];
+	string startRule = lSystem.get_replacement(initiatior);
+	string rule = replaceRule(startRule,0,lSystem);
 	double currentX = currentPoint[0];
 	double currentY = currentPoint[1];
 	double angleRightNow = current_angle;
@@ -180,14 +169,6 @@ vector<Line2D*> parse_rule(char currentChar, LParser::LSystem2D& lSystem, vector
 			angleRightNow += angle_change;
 		} else if (current == '-') {
 			angleRightNow -= angle_change;
-		}else if (current != currentChar) {
-			vector<double> recursionPoint;
-			recursionPoint[0] = currentX;
-			recursionPoint[1] = currentY;
-			vector<Line2D*> recursionlines = parse_rule(current,lSystem,recursionPoint, lijnkleur, angleRightNow, angle_change);
-			for (Line2D* line:recursionlines) {
-				lines.push_back(line);
-			}
 		}else if (lSystem.draw(current)) {
 			Point2D* p1 = new Point2D(currentX, currentY);
 			currentX += cos(angleRightNow);
@@ -209,7 +190,7 @@ img::EasyImage generate2DLSys(const ini::Configuration &configuration) {
 	string inputfile = configuration["2DLSystem"]["inputfile"].as_string_or_die();
 	vector<double> lijnkleur = configuration["2DLSystem"]["color"].as_double_tuple_or_die();
 
-	img::Color backgroundColor = img::Color(background[0],background[1],background[2]);
+	img::Color backgroundColor = img::Color(background[0]*255,background[1]*255,background[2]*255);
 
 	LParser::LSystem2D lSystem;
 	ifstream input_stream(inputfile);
@@ -221,7 +202,7 @@ img::EasyImage generate2DLSys(const ini::Configuration &configuration) {
 
 	Color* lijnkleurColor = new Color(lijnkleur[0]*255, lijnkleur[1]*255, lijnkleur[2]*255);
 
-	vector<Line2D*> lines = parse_rule(lSystem.get_initiator()[0],lSystem,vector<double>(2,0),lijnkleurColor,starting_angle,angle);
+	vector<Line2D*> lines = parse_rule(lSystem,vector<double>(2,0),lijnkleurColor,starting_angle,angle);
 
 	Lines2D lines2D = Lines2D(lines);
 
@@ -250,8 +231,6 @@ img::EasyImage generate_image(const ini::Configuration &configuration)
 		const std::string figure = configuration["LineProperties"]["figure"].as_string_or_die();
 		if (figure=="QuarterCircle") {
 			return QuarterCircle(configuration);
-		} else if (figure=="Eye") {
-			return EyeDraw(configuration);
 		}
 	} else if (typeString == "2DLSystem") {
 		return generate2DLSys(configuration);
