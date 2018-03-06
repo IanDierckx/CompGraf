@@ -10,11 +10,10 @@
 
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include "easy_image.h"
 
-
 using namespace std;
-
 
 class Color {
 public:
@@ -23,8 +22,6 @@ public:
 	double blue;
 
 	Color(double r, double g, double b);
-
-	Color();
 };
 
 class Point2D {
@@ -33,8 +30,6 @@ public:
 	double y;
 
 	Point2D(double inx, double iny);
-
-	Point2D();
 };
 
 class Line2D {
@@ -44,14 +39,11 @@ public:
 	Color* color;
 
 	Line2D(Point2D*& point1, Point2D*& point2, Color*& col);
-	Line2D();
 };
 
 class Lines2D {
 private:
 	vector<Line2D*> Lines;
-
-
 public:
 	const vector<Line2D*>& getLines() const {
 		return Lines;

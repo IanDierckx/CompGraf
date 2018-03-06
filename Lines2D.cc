@@ -6,7 +6,7 @@
  */
 
 #include "Lines2D.h"
-#include <algorithm>
+
 
 using namespace std;
 
@@ -59,13 +59,4 @@ vector<double> Lines2D::getMinMax() {
 	minX = *min_element(xen.begin(), xen.end());
 	minY = *min_element(yen.begin(), yen.end());
 	return {maxX,maxY,minX,minY};
-}
-
-Color::Color() {
-}
-
-Point2D::Point2D() {
-}
-
-Line2D::Line2D() {
 }

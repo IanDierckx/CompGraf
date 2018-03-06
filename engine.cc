@@ -6,9 +6,10 @@
 #include <stdexcept>
 #include <string>
 #include <cmath>
-#include "Lines2D.cpp"
+#include "Lines2D.h"
 #include "l_parser.h"
 #include <algorithm>
+#include <stack>
 
 inline int roundToInt(double d) {
 	return static_cast<int>(std::round(d));
@@ -95,7 +96,7 @@ img::EasyImage QuarterCircle(const ini::Configuration &configuration) {
 	return image;
 }
 
-img::EasyImage draw2DLines(const int size, Lines2D lines, img::Color backgroundColor) {
+img::EasyImage draw2DLines(const int size, Lines2D& lines, img::Color backgroundColor) {
 
 	vector<double> maxmin = lines.getMinMax();
 	double maxX = maxmin[0];
@@ -139,7 +140,6 @@ img::EasyImage draw2DLines(const int size, Lines2D lines, img::Color backgroundC
 }
 
 string replaceRule(string currentRule, unsigned int currentIteration, LParser::LSystem2D& lSystem) {
-	currentIteration += 1;
 	string replacedRule = "";
 	for (char current:currentRule) {
 		if ((current == '+') or (current == '-')) {
@@ -149,6 +149,7 @@ string replaceRule(string currentRule, unsigned int currentIteration, LParser::L
 		}
 	}
 	if (currentIteration != lSystem.get_nr_iterations()-1) {
+		currentIteration += 1;
 		replacedRule = replaceRule(replacedRule,currentIteration,lSystem);
 	}
 	return replacedRule;
@@ -156,17 +157,19 @@ string replaceRule(string currentRule, unsigned int currentIteration, LParser::L
 
 vector<Line2D*> parse_rule(LParser::LSystem2D& lSystem, vector<double> currentPoint, Color* lijnkleur, double current_angle, double angle_change) {
 	vector<Line2D*> lines;
-	char initiatior = lSystem.get_initiator()[0];
-	string startRule = lSystem.get_replacement(initiatior);
+	string startRule = lSystem.get_initiator();
 	string rule = replaceRule(startRule,0,lSystem);
 	double currentX = currentPoint[0];
 	double currentY = currentPoint[1];
 	double angleRightNow = current_angle;
+
 	for (auto current:rule) {
 		if (current == '+') {
 			angleRightNow += angle_change;
 		} else if (current == '-') {
 			angleRightNow -= angle_change;
+		} else if (current == '[') {
+
 		}else if (lSystem.draw(current)) {
 			Point2D* p1 = new Point2D(currentX, currentY);
 			currentX += cos(angleRightNow);
