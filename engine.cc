@@ -141,15 +141,15 @@ img::EasyImage draw2DLines(const int size, Lines2D& lines, img::Color background
 
 string replaceRule(string currentRule, unsigned int currentIteration, LParser::LSystem2D& lSystem) {
 	string replacedRule = "";
+	currentIteration += 1;
 	for (char current:currentRule) {
-		if ((current == '+') or (current == '-')) {
+		if ((current == '+') or (current == '-') or (current == '(') or (current == ')')) {
 			replacedRule += current;
 		} else if (find(lSystem.get_alphabet().begin(),lSystem.get_alphabet().end(),current) != lSystem.get_alphabet().end()) {
 			replacedRule += lSystem.get_replacement(current);
 		}
 	}
-	if (currentIteration != lSystem.get_nr_iterations()-1) {
-		currentIteration += 1;
+	if (currentIteration != lSystem.get_nr_iterations()) {
 		replacedRule = replaceRule(replacedRule,currentIteration,lSystem);
 	}
 	return replacedRule;
@@ -162,15 +162,24 @@ vector<Line2D*> parse_rule(LParser::LSystem2D& lSystem, vector<double> currentPo
 	double currentX = currentPoint[0];
 	double currentY = currentPoint[1];
 	double angleRightNow = current_angle;
-
+	stack<vector<double>> bracketPositions;
 	for (auto current:rule) {
 		if (current == '+') {
 			angleRightNow += angle_change;
 		} else if (current == '-') {
 			angleRightNow -= angle_change;
-		} else if (current == '[') {
-
-		}else if (lSystem.draw(current)) {
+		} else if (current == '(') {
+			vector<double> currentPos {currentX, currentY, angleRightNow};
+			bracketPositions.push(currentPos);
+		} else if (current == ')') {
+			if (!bracketPositions.empty()) {
+				vector<double> currentPos = bracketPositions.top();
+				bracketPositions.pop();
+				currentX = currentPos[0];
+				currentY = currentPos[1];
+				angleRightNow = currentPos[2];
+			}
+		} else if (lSystem.draw(current)) {
 			Point2D* p1 = new Point2D(currentX, currentY);
 			currentX += cos(angleRightNow);
 			currentY += sin(angleRightNow);
