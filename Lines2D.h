@@ -53,10 +53,6 @@ private:
 
 
 public:
-	img::EasyImage drawLines(const int size);
-
-
-
 	const vector<Line2D*>& getLines() const {
 		return Lines;
 	}

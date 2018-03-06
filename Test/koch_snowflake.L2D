@@ -1,0 +1,28 @@
+# Comments worden voorafgegaan door '#'
+# En gelden tot het einde van de regel
+
+#De onderdelen van het L systeem moeten in deze volgorde worden opgegeven
+
+#Het Alfabet van het L Systeem
+Alphabet = {F}
+
+#De 'Draw' Functie
+Draw = { F-> 1
+}
+
+#De Regels van het L Systeem
+Rules = {
+	F -> "F+F--F+F"
+}
+
+#De initile String
+Initiator = "F--F--F"
+
+#De gebruikte hoek (in graden)
+Angle = 60.0
+
+#De Initile hoek (in graden)
+StartingAngle = 0.0
+
+#Het Aantal keer dat een Symbool door zijn Replacement moet worden vervangen
+Iterations = 4

@@ -127,11 +127,9 @@ img::EasyImage draw2DLines(const int size, Lines2D lines, img::Color backgroundC
 		newP1Y += dy;
 		newP2Y += dy;
 
-		unsigned int red = static_cast<unsigned int>(rint(line->color->red*255));
-		unsigned int green = static_cast<unsigned int>(rint(line->color->green*255));
-		unsigned int blue = static_cast<unsigned int>(rint(line->color->blue*255));
 
-		img::Color lijnkleur = img::Color(red,green, blue);
+
+		img::Color lijnkleur = img::Color(line->color->red,line->color->green, line->color->blue);
 
 		img.draw_line(static_cast<unsigned int>(floor(newP1X)),static_cast<unsigned int>(floor(newP1Y)),
 				static_cast<unsigned int>(floor(newP2X)), static_cast<unsigned int>(floor(newP2Y)),
@@ -141,6 +139,7 @@ img::EasyImage draw2DLines(const int size, Lines2D lines, img::Color backgroundC
 }
 
 string replaceRule(string currentRule, unsigned int currentIteration, LParser::LSystem2D& lSystem) {
+	currentIteration += 1;
 	string replacedRule = "";
 	for (char current:currentRule) {
 		if ((current == '+') or (current == '-')) {
@@ -149,8 +148,7 @@ string replaceRule(string currentRule, unsigned int currentIteration, LParser::L
 			replacedRule += lSystem.get_replacement(current);
 		}
 	}
-	if (currentIteration != lSystem.get_nr_iterations()) {
-		currentIteration += 1;
+	if (currentIteration != lSystem.get_nr_iterations()-1) {
 		replacedRule = replaceRule(replacedRule,currentIteration,lSystem);
 	}
 	return replacedRule;

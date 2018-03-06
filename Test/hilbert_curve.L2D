@@ -1,0 +1,18 @@
+Alphabet = {L, R, F}
+
+Draw = {
+        L -> 1,
+        R -> 1,
+        F -> 1
+}
+
+Rules = {
+        L -> "+RF-LFL-FR+",
+        R -> "-LF+RFR+FL-",
+        F -> "F"
+}
+
+Initiator     = "L"
+Angle         = 90
+StartingAngle = 0
+Iterations    = 4

@@ -40,51 +40,6 @@ Lines2D::Lines2D(vector<Line2D*> lines) {
 	Lines = lines;
 }
 
-img::EasyImage Lines2D::drawLines(const int size) {
-
-	vector<double> maxmin = this->getMinMax();
-	double maxX = maxmin[0];
-	double maxY = maxmin[1];
-	double minX = maxmin[2];
-	double minY = maxmin[3];
-	double xrange = maxX-minX;
-	double yrange = maxY-minY;
-	double imageX = size*(xrange/max(xrange,yrange));
-	double imageY = size*(yrange/max(xrange,yrange));
-
-	img::EasyImage img = img::EasyImage(imageX, imageY);
-
-	double schaalfactor = 0.95*(imageX/xrange);
-
-	double DCx = schaalfactor*(minX+maxX)/2;
-	double DCy = schaalfactor*(minY+maxY)/2;
-	double dx = (imageX/2)-DCx;
-	double dy = (imageY/2)-DCy;
-
-	for(auto line:this->Lines) {
-		double newP1X = line->p1->x*schaalfactor;
-		double newP2X = line->p2->x*schaalfactor;
-		double newP1Y = line->p1->y*schaalfactor;
-		double newP2Y = line->p2->y*schaalfactor;
-
-		newP1X += dx;
-		newP2X += dx;
-		newP1Y += dy;
-		newP2Y += dy;
-
-		unsigned int red = static_cast<unsigned int>(rint(line->color->red*255));
-		unsigned int green = static_cast<unsigned int>(rint(line->color->green*255));
-		unsigned int blue = static_cast<unsigned int>(rint(line->color->blue*255));
-
-		img::Color lijnkleur = img::Color(red,green, blue);
-
-		img.draw_line(static_cast<unsigned int>(floor(newP1X)),static_cast<unsigned int>(floor(newP1Y)),
-				static_cast<unsigned int>(floor(newP2X)), static_cast<unsigned int>(floor(newP2Y)),
-				lijnkleur);
-	}
-	return img;
-}
-
 vector<double> Lines2D::getMinMax() {
 	double maxX;
 	double maxY;
