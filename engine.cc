@@ -6,11 +6,15 @@
 #include <stdexcept>
 #include <string>
 #include <cmath>
-#include "Lines2D.cpp"
+#include "Lines2D.h"
 #include "l_parser.h"
 #include <algorithm>
+<<<<<<< HEAD
 #include "vector3d.h"
 #include "Figure3D.h"
+=======
+#include <stack>
+>>>>>>> ca9edabcd5edfedcef798d9221314bd74d973b3b
 
 inline int roundToInt(double d) {
 	return static_cast<int>(std::round(d));
@@ -97,7 +101,7 @@ img::EasyImage QuarterCircle(const ini::Configuration &configuration) {
 	return image;
 }
 
-img::EasyImage draw2DLines(const int size, Lines2D lines, img::Color backgroundColor) {
+img::EasyImage draw2DLines(const int size, Lines2D& lines, img::Color backgroundColor) {
 
 	vector<double> maxmin = lines.getMinMax();
 	double maxX = maxmin[0];
@@ -129,11 +133,9 @@ img::EasyImage draw2DLines(const int size, Lines2D lines, img::Color backgroundC
 		newP1Y += dy;
 		newP2Y += dy;
 
-		unsigned int red = static_cast<unsigned int>(rint(line->color->red*255));
-		unsigned int green = static_cast<unsigned int>(rint(line->color->green*255));
-		unsigned int blue = static_cast<unsigned int>(rint(line->color->blue*255));
 
-		img::Color lijnkleur = img::Color(red,green, blue);
+
+		img::Color lijnkleur = img::Color(line->color->red,line->color->green, line->color->blue);
 
 		img.draw_line(static_cast<unsigned int>(floor(newP1X)),static_cast<unsigned int>(floor(newP1Y)),
 				static_cast<unsigned int>(floor(newP2X)), static_cast<unsigned int>(floor(newP2Y)),
@@ -144,15 +146,15 @@ img::EasyImage draw2DLines(const int size, Lines2D lines, img::Color backgroundC
 
 string replaceRule(string currentRule, unsigned int currentIteration, LParser::LSystem2D& lSystem) {
 	string replacedRule = "";
+	currentIteration += 1;
 	for (char current:currentRule) {
-		if ((current == '+') or (current == '-')) {
+		if ((current == '+') or (current == '-') or (current == '(') or (current == ')')) {
 			replacedRule += current;
 		} else if (find(lSystem.get_alphabet().begin(),lSystem.get_alphabet().end(),current) != lSystem.get_alphabet().end()) {
 			replacedRule += lSystem.get_replacement(current);
 		}
 	}
 	if (currentIteration != lSystem.get_nr_iterations()) {
-		currentIteration += 1;
 		replacedRule = replaceRule(replacedRule,currentIteration,lSystem);
 	}
 	return replacedRule;
@@ -160,18 +162,29 @@ string replaceRule(string currentRule, unsigned int currentIteration, LParser::L
 
 vector<Line2D*> parse_rule(LParser::LSystem2D& lSystem, vector<double> currentPoint, Color* lijnkleur, double current_angle, double angle_change) {
 	vector<Line2D*> lines;
-	char initiatior = lSystem.get_initiator()[0];
-	string startRule = lSystem.get_replacement(initiatior);
+	string startRule = lSystem.get_initiator();
 	string rule = replaceRule(startRule,0,lSystem);
 	double currentX = currentPoint[0];
 	double currentY = currentPoint[1];
 	double angleRightNow = current_angle;
+	stack<vector<double>> bracketPositions;
 	for (auto current:rule) {
 		if (current == '+') {
 			angleRightNow += angle_change;
 		} else if (current == '-') {
 			angleRightNow -= angle_change;
-		}else if (lSystem.draw(current)) {
+		} else if (current == '(') {
+			vector<double> currentPos {currentX, currentY, angleRightNow};
+			bracketPositions.push(currentPos);
+		} else if (current == ')') {
+			if (!bracketPositions.empty()) {
+				vector<double> currentPos = bracketPositions.top();
+				bracketPositions.pop();
+				currentX = currentPos[0];
+				currentY = currentPos[1];
+				angleRightNow = currentPos[2];
+			}
+		} else if (lSystem.draw(current)) {
 			Point2D* p1 = new Point2D(currentX, currentY);
 			currentX += cos(angleRightNow);
 			currentY += sin(angleRightNow);
