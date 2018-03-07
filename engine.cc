@@ -9,6 +9,8 @@
 #include "Lines2D.cpp"
 #include "l_parser.h"
 #include <algorithm>
+#include "vector3d.h"
+#include "Figure3D.h"
 
 inline int roundToInt(double d) {
 	return static_cast<int>(std::round(d));
@@ -208,13 +210,6 @@ img::EasyImage generate2DLSys(const ini::Configuration &configuration) {
 
 	img::EasyImage img = draw2DLines(size,lines2D,backgroundColor);
 
-//	for (auto line:lines) {
-//		delete line->color;
-//		delete line->p1;
-//		delete line->p2;
-//	}
-//
-//	delete lijnkleurColor;
 	return img;
 }
 
@@ -241,6 +236,15 @@ img::EasyImage generate_image(const ini::Configuration &configuration)
 
 int main(int argc, char const* argv[])
 {
+	Vector3D p0 =  Vector3D::point(2.0, 3.0, 4.0);
+	Vector3D p1 = Vector3D::point(5.0, 6.0, 7.0);
+	Vector3D p2 = Vector3D::point(2.5, 3.5, 4.5);
+	vector<Vector3D> punten = {p0,p1,p2};
+	vector<Face*> faces = {};
+	Figure3D figure = Figure3D(punten,faces);
+	Vector3D trans = Vector3D::vector(1,2,3);
+	figure.translate(trans);
+	figure.applyTransformations();
 		int retVal = 0;
         try
         {
