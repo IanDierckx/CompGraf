@@ -5,7 +5,7 @@
  *      Author: uauser
  */
 
-#include "Lines2D.h"
+#include "lines2D.h"
 
 
 using namespace std;

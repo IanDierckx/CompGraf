@@ -1,20 +1,18 @@
 #include "easy_image.h"
 #include "ini_configuration.h"
-
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <cmath>
-#include "Lines2D.h"
-#include "l_parser.h"
 #include <algorithm>
-<<<<<<< HEAD
-#include "vector3d.h"
-#include "Figure3D.h"
-=======
 #include <stack>
->>>>>>> ca9edabcd5edfedcef798d9221314bd74d973b3b
+#include "figure3D.h"
+#include "l_parser.h"
+#include "lines2D.h"
+#include "vector3d.h"
+
+using namespace std;
 
 inline int roundToInt(double d) {
 	return static_cast<int>(std::round(d));
@@ -167,7 +165,7 @@ vector<Line2D*> parse_rule(LParser::LSystem2D& lSystem, vector<double> currentPo
 	double currentX = currentPoint[0];
 	double currentY = currentPoint[1];
 	double angleRightNow = current_angle;
-	stack<vector<double>> bracketPositions;
+	stack<vector<double>, vector<vector<double>>> bracketPositions;
 	for (auto current:rule) {
 		if (current == '+') {
 			angleRightNow += angle_change;
@@ -226,7 +224,58 @@ img::EasyImage generate2DLSys(const ini::Configuration &configuration) {
 	return img;
 }
 
+img::EasyImage generate3DLines(const ini::Configuration &configuration) {
+	int size = configuration["General"]["size"].as_int_or_die();
 
+	vector<double> background = configuration["General"]["backgroundcolor"].as_double_tuple_or_die();
+	img::Color backgroundColor = img::Color(background[0]*255,background[1]*255,background[2]*255);
+
+	unsigned int nrFigures = configuration["General"]["nrFigures"].as_int_or_die();
+	vector<double> eye = configuration["General"]["eye"].as_double_tuple_or_die();
+	Vector3D eyePoint = Vector3D::point(eye[0],eye[1],eye[2]);
+
+	Figures3D figuren;
+	unsigned int currentFigure = 0;
+	while (currentFigure < nrFigures) {
+		string currentFigureString = "Figure"+to_string(currentFigure);
+		vector<double> lijnkleurVector = configuration[currentFigureString]["color"].as_double_tuple_or_die();
+		Color* lijnkleur = new Color(lijnkleurVector[0]*255, lijnkleurVector[1]*255, lijnkleurVector[2]*255);
+		vector<Vector3D> punten;
+		unsigned int nrPunten = configuration[currentFigureString]["nrPoints"].as_int_or_die();
+		unsigned int huidigPunt = 0;
+		while (huidigPunt < nrPunten) {
+			vector<double> puntVector = configuration[currentFigureString]["point"+to_string(huidigPunt)].as_double_tuple_or_die();
+			Vector3D punt =  Vector3D::point(puntVector[0], puntVector[1], puntVector[2]);
+			punten.push_back(punt);
+			huidigPunt += 1;
+		}
+		vector<Face*> faces;
+		unsigned int nrLijnen = configuration[currentFigureString]["nrLines"].as_int_or_die();
+		unsigned int huidigeLijn = 0;
+		while (huidigeLijn < nrLijnen) {
+			vector<int> faceVector = configuration[currentFigureString]["line"+to_string(huidigeLijn)].as_int_tuple_or_die();
+			Face* face = new Face(faceVector);
+			faces.push_back(face);
+			huidigeLijn += 1;
+		}
+		Figure3D* figuur = new Figure3D(punten,faces,lijnkleur);
+		figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
+		figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
+		figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
+		figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
+		vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
+		Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
+		figuur->translate(center);
+		figuren.addFigure(figuur);
+		currentFigure += 1;
+	}
+
+	Matrix eyePointMatrix = figuren.eyepointTrans(eyePoint);
+	figuren.applyTransformations(eyePointMatrix);
+	Lines2D projectie = figuren.doProjection();
+
+	return draw2DLines(size,projectie,backgroundColor);
+}
 
 img::EasyImage generate_image(const ini::Configuration &configuration)
 {
@@ -242,6 +291,8 @@ img::EasyImage generate_image(const ini::Configuration &configuration)
 		}
 	} else if (typeString == "2DLSystem") {
 		return generate2DLSys(configuration);
+	} else if (typeString == "Wireframe") {
+		return generate3DLines(configuration);
 	}
 	img::EasyImage img = img::EasyImage(10,10);
 	return img;
@@ -249,15 +300,6 @@ img::EasyImage generate_image(const ini::Configuration &configuration)
 
 int main(int argc, char const* argv[])
 {
-	Vector3D p0 =  Vector3D::point(2.0, 3.0, 4.0);
-	Vector3D p1 = Vector3D::point(5.0, 6.0, 7.0);
-	Vector3D p2 = Vector3D::point(2.5, 3.5, 4.5);
-	vector<Vector3D> punten = {p0,p1,p2};
-	vector<Face*> faces = {};
-	Figure3D figure = Figure3D(punten,faces);
-	Vector3D trans = Vector3D::vector(1,2,3);
-	figure.translate(trans);
-	figure.applyTransformations();
 		int retVal = 0;
         try
         {

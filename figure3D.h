@@ -11,8 +11,11 @@
 #include <vector>
 
 #include "vector3d.h"
+#include "lines2D.h"
 
 using namespace std;
+
+class Color;
 
 class Face {
 private:
@@ -26,15 +29,14 @@ public:
 
 class Figure3D {
 private:
+	vector<Matrix> transformationsToApply;
+
+public:
 	vector<Vector3D> points;
 	vector<Face*> faces;
-	vector<Matrix> transformationsToApply;
-public:
-	Figure3D(vector<Vector3D> pointsVector, vector<Face*> faceVector);
+	Color* color;
 
-	const vector<Face*>& getFaces() const;
-
-	const vector<Vector3D>& getPoints() const;
+	Figure3D(vector<Vector3D> pointsVector, vector<Face*> faceVector, Color*& color);
 
 	void scaleFigure(const double scale);
 
@@ -47,11 +49,32 @@ public:
 	void translate(const Vector3D& vector);
 
 	void applyTransformations();
+
+
 };
 
 class Figures3D {
-public:
+private:
 	vector<Figure3D*> figures;
+	double eyeTheta;
+	double eyePhi;
+	double eyeR;
+
+	void eyeToPolar(const Vector3D eye);
+
+	Point2D* doPointProjection(const double d, const Vector3D& point);
+public:
+	Matrix eyepointTrans(const Vector3D& eyepoint);
+
+	void applyTransformations(Matrix eyepointMatrix);
+
+	Lines2D doProjection();
+
+	const vector<Figure3D*>& getFigures() const {
+		return figures;
+	}
+
+	void addFigure(Figure3D* figure);
 };
 
 #endif /* FIGURE3D_H_ */
