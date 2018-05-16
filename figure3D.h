@@ -36,7 +36,7 @@ public:
 	vector<Face*> faces;
 	Color* color;
 
-	Figure3D(vector<Vector3D> pointsVector, vector<Face*> faceVector, Color*& color);
+	Figure3D(vector<Vector3D>& pointsVector, vector<Face*>& faceVector, Color*& color);
 
 	void scaleFigure(const double scale);
 
@@ -49,8 +49,6 @@ public:
 	void translate(const Vector3D& vector);
 
 	void applyTransformations();
-
-
 };
 
 class Figures3D {
@@ -66,7 +64,7 @@ private:
 public:
 	Matrix eyepointTrans(const Vector3D& eyepoint);
 
-	void applyTransformations(Matrix eyepointMatrix);
+	void applyTransformations(Matrix& eyepointMatrix);
 
 	Lines2D doProjection();
 
@@ -75,6 +73,16 @@ public:
 	}
 
 	void addFigure(Figure3D* figure);
+
+	Figure3D* createTetrahedron(Color*& col);
+
+	Figure3D* createCube(Color*& col);
+
+	Figure3D* createOctahedron(Color*& col);
+
+	Figure3D* createIcosahedron(Color*& col);
+
+	Figure3D* createDodecahedron(Color*& col);
 };
 
 #endif /* FIGURE3D_H_ */
