@@ -8,6 +8,7 @@
 #include <cmath>
 #include "figure3D.h"
 
+using namespace std;
 
 const vector<int>& Face::getPointIndexes() const {
 	return pointIndexes;
@@ -464,4 +465,110 @@ Figure3D* Figures3D::createTorus(const double R, const double r, const int n, co
 	}
 	Figure3D* torus = new Figure3D(points,faces,col);
 	return torus;
+}
+
+Figure3D* Figures3D::create3DLSystem(string inputfile, Color*& col) {
+	vector<Vector3D> points;
+	vector<Face*> faces;
+
+	LParser::LSystem3D lSystem;
+	ifstream input_stream(inputfile);
+	input_stream >> lSystem;
+	input_stream.close();
+
+	double angle = lSystem.get_angle()*(M_PI/180);
+
+	string startRule = lSystem.get_initiator();
+	string rule = replaceRule(startRule,0,lSystem);
+
+	Vector3D currentPos = Vector3D::point(0,0,0);
+	points.push_back(currentPos);
+	Vector3D H = Vector3D::vector(1,0,0);
+	Vector3D L = Vector3D::vector(0,1,0);
+	Vector3D U = Vector3D::vector(0,0,1);
+
+	stack<vector<Vector3D>, vector<vector<Vector3D>>> bracketPositions;
+	int lastPoint = 0;
+	stack<int, vector<int>> pointsBeforeBrackets;
+
+	for (auto current:rule) {
+		if (current == '+') {
+			Vector3D Hnew = H*cos(angle)+L*sin(angle);
+			Vector3D Lnew = -H*sin(angle)+L*cos(angle);
+			H = Hnew;
+			L = Lnew;
+		} else if (current == '-') {
+			Vector3D Hnew = H*cos(-angle)+L*sin(-angle);
+			Vector3D Lnew = -H*sin(-angle)+L*cos(-angle);
+			H = Hnew;
+			L = Lnew;
+		} else if (current == '^') {
+			Vector3D Hnew = H*cos(angle)+U*sin(angle);
+			Vector3D Unew = -H*sin(angle)+U*cos(angle);
+			H = Hnew;
+			U = Unew;
+		} else if (current == '&') {
+			Vector3D Hnew = H*cos(-angle)+U*sin(-angle);
+			Vector3D Unew = -H*sin(-angle)+U*cos(-angle);
+			H = Hnew;
+			U = Unew;
+		} else if (current == '\\') {
+			Vector3D Lnew = L*cos(angle)-U*sin(angle);
+			Vector3D Unew = L*sin(angle)+U*cos(angle);
+			L = Lnew;
+			U = Unew;
+		} else if (current == '/') {
+			Vector3D Lnew = L*cos(-angle)-U*sin(-angle);
+			Vector3D Unew = L*sin(-angle)+U*cos(-angle);
+			L = Lnew;
+			U = Unew;
+		} else if (current == '\\') {
+			Vector3D Hnew = -H;
+			Vector3D Lnew = -L;
+			L = Lnew;
+			H = Hnew;
+		} else if (current == '(') {
+			vector<Vector3D> currentPosAndAngles = {currentPos,H,L,U};
+			bracketPositions.push(currentPosAndAngles);
+			pointsBeforeBrackets.push(lastPoint);
+		} else if (current == ')') {
+			if (!bracketPositions.empty()) {
+				vector<Vector3D> currentPosAndAngles = bracketPositions.top();
+				bracketPositions.pop();
+				currentPos = currentPosAndAngles[0];
+				H = currentPosAndAngles[1];
+				L = currentPosAndAngles[2];
+				U = currentPosAndAngles[3];
+				lastPoint = pointsBeforeBrackets.top();
+				pointsBeforeBrackets.pop();
+			}
+		} else if (lSystem.draw(current)) {
+			currentPos += H;
+			points.push_back(currentPos);
+			Face* face = new Face({lastPoint, points.size()-1});
+			lastPoint = points.size()-1;
+			faces.push_back(face);
+		}
+		else {
+			currentPos += H;
+		}
+	}
+	Figure3D* drawing = new Figure3D(points,faces,col);
+	return drawing;
+}
+
+string Figures3D::replaceRule(string currentRule, unsigned int currentIteration, LParser::LSystem3D& lSystem) {
+	string replacedRule = "";
+	currentIteration += 1;
+	for (auto current:currentRule) {
+		if ((current == '+') or (current == '-') or (current == '(') or (current == ')') or (current == '^') or (current == '&') or (current == '\\') or (current == '/') or (current == '|')) {
+			replacedRule += current;
+		} else if (find(lSystem.get_alphabet().begin(),lSystem.get_alphabet().end(),current) != lSystem.get_alphabet().end()) {
+			replacedRule += lSystem.get_replacement(current);
+		}
+	}
+	if (currentIteration != lSystem.get_nr_iterations()) {
+		replacedRule = replaceRule(replacedRule,currentIteration,lSystem);
+	}
+	return replacedRule;
 }

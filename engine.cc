@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <sstream>
 #include <cmath>
 #include <algorithm>
 #include <stack>
@@ -15,7 +16,7 @@
 using namespace std;
 
 inline int roundToInt(double d) {
-	return static_cast<int>(std::round(d));
+	return static_cast<int>(round(d));
 }
 
 img::EasyImage generate_ColorRect(const ini::Configuration &configuration)
@@ -237,7 +238,7 @@ img::EasyImage generate3DLines(const ini::Configuration &configuration) {
 	Figures3D figuren;
 	unsigned int currentFigure = 0;
 	while (currentFigure < nrFigures) {
-		string currentFigureString = "Figure"+to_string(currentFigure);
+		string currentFigureString = "Figure" + to_string(currentFigure);
 		vector<double> lijnkleurVector = configuration[currentFigureString]["color"].as_double_tuple_or_die();
 		Color* lijnkleur = new Color(lijnkleurVector[0]*255, lijnkleurVector[1]*255, lijnkleurVector[2]*255);
 		if (configuration[currentFigureString]["type"].as_string_or_die() == "LineDrawing") {
@@ -245,7 +246,7 @@ img::EasyImage generate3DLines(const ini::Configuration &configuration) {
 			unsigned int nrPunten = configuration[currentFigureString]["nrPoints"].as_int_or_die();
 			unsigned int huidigPunt = 0;
 			while (huidigPunt < nrPunten) {
-				vector<double> puntVector = configuration[currentFigureString]["point"+to_string(huidigPunt)].as_double_tuple_or_die();
+				vector<double> puntVector = configuration[currentFigureString]["point"+(huidigPunt)].as_double_tuple_or_die();
 				Vector3D punt =  Vector3D::point(puntVector[0], puntVector[1], puntVector[2]);
 				punten.push_back(punt);
 				huidigPunt += 1;
@@ -254,7 +255,7 @@ img::EasyImage generate3DLines(const ini::Configuration &configuration) {
 			unsigned int nrLijnen = configuration[currentFigureString]["nrLines"].as_int_or_die();
 			unsigned int huidigeLijn = 0;
 			while (huidigeLijn < nrLijnen) {
-				vector<int> faceVector = configuration[currentFigureString]["line"+to_string(huidigeLijn)].as_int_tuple_or_die();
+				vector<int> faceVector = configuration[currentFigureString]["line"+(huidigeLijn)].as_int_tuple_or_die();
 				Face* face = new Face(faceVector);
 				faces.push_back(face);
 				huidigeLijn += 1;
@@ -368,6 +369,18 @@ img::EasyImage generate3DLines(const ini::Configuration &configuration) {
 			int n = configuration[currentFigureString]["n"].as_int_or_die();
 			int m = configuration[currentFigureString]["m"].as_int_or_die();
 			Figure3D* figuur = figuren.createTorus(R,r,n,m,lijnkleur);
+			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
+			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
+			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
+			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
+			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
+			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
+			figuur->translate(center);
+			figuren.addFigure(figuur);
+			currentFigure += 1;
+		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "3DLSystem") {
+			string inputFile = configuration[currentFigureString]["inputfile"].as_string_or_die();
+			Figure3D* figuur = figuren.create3DLSystem(inputFile,lijnkleur);
 			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
 			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
 			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());

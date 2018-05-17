@@ -9,9 +9,12 @@
 #define FIGURE3D_H_
 
 #include <vector>
+#include <fstream>
+#include <stack>
 
 #include "vector3d.h"
 #include "lines2D.h"
+#include "l_parser.h"
 
 using namespace std;
 
@@ -65,6 +68,8 @@ private:
 	void eyeToPolar(const Vector3D eye);
 
 	Point2D* doPointProjection(const double d, const Vector3D& point);
+
+	string replaceRule(string currentRule, unsigned int currentIteration, LParser::LSystem3D& lSystem);
 public:
 	Matrix eyepointTrans(const Vector3D& eyepoint);
 
@@ -95,6 +100,8 @@ public:
 	Figure3D* createCylinder(const int n, const double h, Color*& col);
 
 	Figure3D* createTorus(const double R, const double r, const int n, const int m, Color*& col);
+
+	Figure3D* create3DLSystem(string inputfile, Color*& col);
 };
 
 #endif /* FIGURE3D_H_ */
