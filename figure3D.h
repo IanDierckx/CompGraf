@@ -83,6 +83,8 @@ public:
 	Figure3D* createIcosahedron(Color*& col);
 
 	Figure3D* createDodecahedron(Color*& col);
+
+	Figure3D* createSphere(const int n, Color*& col);
 };
 
 #endif /* FIGURE3D_H_ */

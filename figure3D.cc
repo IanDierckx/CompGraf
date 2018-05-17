@@ -301,3 +301,72 @@ Figure3D* Figures3D::createDodecahedron(Color*& col) {
 	Figure3D* dodecahedron = new Figure3D(points,faces,col);
 	return dodecahedron;
 }
+
+Figure3D* Figures3D::createSphere(const int n, Color*& col) {
+	Figure3D* icosahedron = createIcosahedron(col);
+	vector<Face*> newFaces = icosahedron->faces;
+	vector<Vector3D> newPoints = icosahedron->points;
+	for (int times = 1; times <= n; ++times) {
+		vector<Face*> newNewFaces;
+		for (auto& face:newFaces) {
+			Vector3D p1 = newPoints[face->getPointIndexes()[0]];
+			Vector3D p2 = newPoints[face->getPointIndexes()[1]];
+			Vector3D p3 = newPoints[face->getPointIndexes()[2]];
+			Vector3D p4 = Vector3D::point((p1.x+p3.x)/2,(p1.y+p3.y)/2,(p1.z+p3.z)/2);
+			Vector3D p5 = Vector3D::point((p1.x+p2.x)/2,(p1.y+p2.y)/2,(p1.z+p2.z)/2);
+			Vector3D p6 = Vector3D::point((p2.x+p3.x)/2,(p2.y+p3.y)/2,(p2.z+p3.z)/2);
+
+			int p1Index = face->getPointIndexes()[0];
+			int p2Index = face->getPointIndexes()[1];
+			int p3Index = face->getPointIndexes()[2];
+			int p4Index;
+			int p5Index;
+			int p6Index;
+			bool p4Found = false;
+			bool p5Found = false;
+			bool p6Found = false;
+			for (unsigned int pointIndex = 0; pointIndex < newPoints.size(); ++pointIndex) {
+				if ((newPoints[pointIndex].x == p4.x) and (newPoints[pointIndex].y == p4.y) and (newPoints[pointIndex].z == p4.z)) {
+					p4Found = true;
+					p4Index = pointIndex;
+				} else if ((newPoints[pointIndex].x == p5.x) and (newPoints[pointIndex].y == p5.y) and (newPoints[pointIndex].z == p5.z)) {
+					p5Found = true;
+					p5Index = pointIndex;
+				} else if ((newPoints[pointIndex].x == p6.x) and (newPoints[pointIndex].y == p6.y) and (newPoints[pointIndex].z == p6.z)) {
+					p6Found = true;
+					p6Index = pointIndex;
+				}
+			}
+			if (not p4Found) {
+				newPoints.push_back(p4);
+				p4Index = newPoints.size()-1;
+			}
+			if (not p5Found) {
+				newPoints.push_back(p5);
+				p5Index = newPoints.size()-1;
+			}
+			if (not p6Found) {
+				newPoints.push_back(p6);
+				p6Index = newPoints.size()-1;
+			}
+
+			Face* newFace1 = new Face({p1Index,p5Index,p4Index});
+			newNewFaces.push_back(newFace1);
+			Face* newFace2 = new Face({p4Index,p5Index,p6Index});
+			newNewFaces.push_back(newFace2);
+			Face* newFace3 = new Face({p5Index,p2Index,p6Index});
+			newNewFaces.push_back(newFace3);
+			Face* newFace4 = new Face({p4Index,p6Index,p3Index});
+			newNewFaces.push_back(newFace4);
+
+			delete face;
+		}
+		newFaces = newNewFaces;
+	}
+	delete icosahedron;
+	for (auto& point:newPoints) {
+		point.normalise();
+	}
+	Figure3D* sphere = new Figure3D(newPoints,newFaces,col);
+	return sphere;
+}
