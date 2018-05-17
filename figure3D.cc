@@ -17,6 +17,14 @@ Face::Face(vector<int> pIndexes) {
 	pointIndexes = pIndexes;
 }
 
+Face::Face() {
+	pointIndexes = {};
+}
+
+void Face::addPoint(const int pointIndex) {
+	pointIndexes.push_back(pointIndex);
+}
+
 Figure3D::Figure3D(vector<Vector3D>& pointsVector, vector<Face*>& faceVector, Color*& col) {
 	points = pointsVector;
 	faces = faceVector;
@@ -138,7 +146,6 @@ Lines2D Figures3D::doProjection() {
 				currentIndex += 1;
 			}
 			Point2D* p1 = doPointProjection(1,figure->points[face->getPointIndexes()[currentIndex]]);
-			unsigned int index2ePunt = currentIndex+1;
 			Point2D* p2 = doPointProjection(1,figure->points[face->getPointIndexes()[0]]);
 			Line2D* lijn = new Line2D(p1,p2,figure->color);
 			lines.push_back(lijn);
@@ -369,4 +376,92 @@ Figure3D* Figures3D::createSphere(const int n, Color*& col) {
 	}
 	Figure3D* sphere = new Figure3D(newPoints,newFaces,col);
 	return sphere;
+}
+
+Figure3D* Figures3D::createCone(const int n, const double h, Color*& col) {
+	vector<Vector3D> points;
+	vector<Face*> faces;
+	for (int pointNumber = 0; pointNumber < n+1; ++pointNumber) {
+		if (pointNumber == n) {
+			Vector3D point = Vector3D::point(0,0,h);
+			points.push_back(point);
+		} else {
+			Vector3D point = Vector3D::point(cos((2*pointNumber*M_PI)/n),sin((2*pointNumber*M_PI)/n),0);
+			points.push_back(point);
+		}
+	}
+	for (int faceNumber = 0; faceNumber < n+1; ++faceNumber) {
+		if (faceNumber == n) {
+			Face* face = new Face();
+			for (int pointNumber = n-1; pointNumber >= 0; --pointNumber) {
+				face->addPoint(pointNumber);
+			}
+			faces.push_back(face);
+		} else {
+			Face* face = new Face({faceNumber,(faceNumber+1)%n,n});
+			faces.push_back(face);
+		}
+	}
+
+	Figure3D* cone = new Figure3D(points,faces,col);
+	return cone;
+}
+
+Figure3D* Figures3D::createCylinder(const int n, const double h, Color*& col) {
+	vector<Vector3D> points;
+	vector<Face*> faces;
+	for (int pointNumber = 0; pointNumber < 2*n; ++pointNumber) {
+		if (pointNumber < n) {
+			Vector3D point = Vector3D::point(cos((2*pointNumber*M_PI)/n),sin((2*pointNumber*M_PI)/n),0);
+			points.push_back(point);
+		} else {
+			Vector3D point = Vector3D::point(cos((2*pointNumber*M_PI)/n),sin((2*pointNumber*M_PI)/n),h);
+			points.push_back(point);
+		}
+	}
+	for (int faceNumber = 0; faceNumber < n+2; ++faceNumber) {
+		if (faceNumber == n) {
+			Face* face = new Face();
+			for (int pointNumber = n-1; pointNumber >= 0; --pointNumber) {
+				face->addPoint(pointNumber);
+			}
+			faces.push_back(face);
+		} else if (faceNumber == n+1) {
+			Face* face = new Face();
+			for (int pointNumber = n-1; pointNumber >= 0; --pointNumber) {
+				face->addPoint(pointNumber+n);
+			}
+			faces.push_back(face);
+		} else {
+			Face* face = new Face({faceNumber,(faceNumber+1)%n,((faceNumber+1)%n)+n,faceNumber+n});
+			faces.push_back(face);
+		}
+	}
+
+	Figure3D* cylinder = new Figure3D(points,faces,col);
+	return cylinder;
+}
+
+Figure3D* Figures3D::createTorus(const double R, const double r, const int n, const int m, Color*& col) {
+	vector<Vector3D> points;
+	vector<Face*> faces;
+	for (int i = 0; i < n; ++i) {
+		for (int j = 0; j < m; ++j) {
+			double u = (2*i*M_PI)/n;
+			double v = (2*j*M_PI)/m;
+			double x = (R+r*cos(v))*cos(u);
+			double y = (R+r*cos(v))*sin(u);
+			double z = r*sin(v);
+			Vector3D point = Vector3D::point(x,y,z);
+			points.push_back(point);
+		}
+	}
+	for (int i = 0; i < n; ++i) {
+			for (int j = 0; j < m; ++j) {
+				Face* face = new Face({i*n+j,((i+1)%n)*n+j,((i+1)%n)*n+((j+1)%m),i*n+((j+1)%m)});
+				faces.push_back(face);
+			}
+	}
+	Figure3D* torus = new Figure3D(points,faces,col);
+	return torus;
 }

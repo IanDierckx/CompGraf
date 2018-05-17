@@ -24,6 +24,10 @@ public:
 	const vector<int>& getPointIndexes() const;
 
 	Face(vector<int> pIndexes);
+
+	Face();
+
+	void addPoint(const int pointIndex);
 };
 
 
@@ -85,6 +89,12 @@ public:
 	Figure3D* createDodecahedron(Color*& col);
 
 	Figure3D* createSphere(const int n, Color*& col);
+
+	Figure3D* createCone(const int n, const double h, Color*& col);
+
+	Figure3D* createCylinder(const int n, const double h, Color*& col);
+
+	Figure3D* createTorus(const double R, const double r, const int n, const int m, Color*& col);
 };
 
 #endif /* FIGURE3D_H_ */

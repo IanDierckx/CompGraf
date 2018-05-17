@@ -336,6 +336,47 @@ img::EasyImage generate3DLines(const ini::Configuration &configuration) {
 			figuur->translate(center);
 			figuren.addFigure(figuur);
 			currentFigure += 1;
+		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "Cone") {
+			int n = configuration[currentFigureString]["n"].as_int_or_die();
+			double height = configuration[currentFigureString]["height"].as_double_or_die();
+			Figure3D* figuur = figuren.createCone(n,height,lijnkleur);
+			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
+			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
+			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
+			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
+			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
+			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
+			figuur->translate(center);
+			figuren.addFigure(figuur);
+			currentFigure += 1;
+		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "Cylinder") {
+			int n = configuration[currentFigureString]["n"].as_int_or_die();
+			double height = configuration[currentFigureString]["height"].as_double_or_die();
+			Figure3D* figuur = figuren.createCylinder(n,height,lijnkleur);
+			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
+			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
+			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
+			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
+			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
+			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
+			figuur->translate(center);
+			figuren.addFigure(figuur);
+			currentFigure += 1;
+		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "Torus") {
+			double R = configuration[currentFigureString]["R"].as_double_or_die();
+			double r = configuration[currentFigureString]["r"].as_double_or_die();
+			int n = configuration[currentFigureString]["n"].as_int_or_die();
+			int m = configuration[currentFigureString]["m"].as_int_or_die();
+			Figure3D* figuur = figuren.createTorus(R,r,n,m,lijnkleur);
+			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
+			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
+			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
+			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
+			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
+			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
+			figuur->translate(center);
+			figuren.addFigure(figuur);
+			currentFigure += 1;
 		}
 	}
 
