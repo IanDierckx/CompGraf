@@ -8,10 +8,12 @@
 #include <cmath>
 #include <algorithm>
 #include <stack>
+#include <assert.h>
 #include "figure3D.h"
 #include "l_parser.h"
 #include "lines2D.h"
 #include "vector3d.h"
+#include "ZBuffer.h"
 
 using namespace std;
 
@@ -100,7 +102,104 @@ img::EasyImage QuarterCircle(const ini::Configuration &configuration) {
 	return image;
 }
 
-img::EasyImage draw2DLines(const int size, Lines2D& lines, img::Color backgroundColor) {
+void draw_zbuff_line(ZBuffer*& buffer, img::EasyImage& img, unsigned int x0, unsigned int y0, double z0, unsigned int x1, unsigned int y1, double z1, const img::Color color) {
+	assert(x0 < img.get_width() && y0 < img.get_height());
+	assert(x1 < img.get_width() && y1 < img.get_height());
+	if (x0 == x1)
+	{
+		//special case for x0 == x1
+		double a = std::max(y0, y1)-std::min(y0, y1);
+		int count = a;
+		for (unsigned int i = std::min(y0, y1); i <= std::max(y0, y1); i++)
+		{
+			unsigned int xi = x0;
+			unsigned int yi = i;
+			double zValue = ((count/a)/z0)+((1-(count/a))/z1);
+			if (buffer->getBufferValue(x0,i) > zValue) {
+				(img)(xi, yi) = color;
+
+			}
+			count--;
+		}
+	}
+	else if (y0 == y1)
+	{
+		//special case for y0 == y1
+		double a = std::max(x0, x1)-std::min(x0, x1);
+		int count = a;
+		for (unsigned int i = std::min(x0, x1); i <= std::max(x0, x1); i++)
+		{
+			unsigned int xi = i;
+			unsigned int yi = y0;
+			double zValue = ((count/a)/z0)+((1-(count/a))/z1);
+			if (buffer->getBufferValue(x0,i) > zValue) {
+				(img)(xi, yi) = color;
+				buffer->setBufferValue(i, y0,zValue);
+			}
+			count--;
+		}
+	}
+	else
+	{
+		if (x0 > x1)
+		{
+			//flip points if x1>x0: we want x0 to have the lowest value
+			std::swap(x0, x1);
+			std::swap(y0, y1);
+		}
+		double m = ((double) y1 - (double) y0) / ((double) x1 - (double) x0);
+		if (-1.0 <= m && m <= 1.0)
+		{
+			double a = (x1 - x0);
+			double count = a;
+			for (unsigned int i = 0; i <= (x1 - x0); i++)
+			{
+				unsigned int xi = x0 + i;
+				unsigned int yi = (unsigned int) round(y0 + m * i);
+				double zValue = ((count/a)/z0)+((1-(count/a))/z1);
+				if (buffer->getBufferValue(xi, yi) > zValue) {
+					(img)(xi, yi) = color;
+					buffer->setBufferValue(xi, yi,zValue);
+				}
+				count--;
+			}
+		}
+		else if (m > 1.0)
+		{
+			double a = (y0 - y1);
+			int count = a;
+			for (unsigned int i = 0; i <= (y1 - y0); i++)
+			{
+				unsigned int xi = (unsigned int) round(x0 + (i / m));
+				unsigned int yi = y0 + i;
+				double zValue = ((count/a)/z0)+((1-(count/a))/z1);
+				if (buffer->getBufferValue(xi, yi) > zValue) {
+					(img)(xi, yi) = color;
+					buffer->setBufferValue(xi, yi,zValue);
+				}
+				count--;
+			}
+		}
+		else if (m < -1.0)
+		{
+			double a = (y0 - y1);
+			int count = a;
+			for (unsigned int i = 0; i <= (y0 - y1); i++)
+			{
+				unsigned int xi = (unsigned int) round(x0 - (i / m));
+				unsigned int yi = y0 - i;
+				double zValue = ((count/a)/z0)+((1-(count/a))/z1);
+				if (buffer->getBufferValue(xi, yi) > zValue) {
+					(img)(xi, yi) = color;
+					buffer->setBufferValue(xi, yi,zValue);
+				}
+				count--;
+			}
+		}
+	}
+}
+
+img::EasyImage draw2DLines(const int size, Lines2D& lines, img::Color backgroundColor, bool ZBufferOn) {
 
 	vector<double> maxmin = lines.getMinMax();
 	double maxX = maxmin[0];
@@ -121,6 +220,9 @@ img::EasyImage draw2DLines(const int size, Lines2D& lines, img::Color background
 	double dx = (imageX/2)-DCx;
 	double dy = (imageY/2)-DCy;
 
+
+	ZBuffer* buffer = new ZBuffer(img.get_width(),img.get_height());
+
 	for(auto line:lines.getLines()) {
 		double newP1X = line->p1->x*schaalfactor;
 		double newP2X = line->p2->x*schaalfactor;
@@ -135,13 +237,19 @@ img::EasyImage draw2DLines(const int size, Lines2D& lines, img::Color background
 
 
 		img::Color lijnkleur = img::Color(line->color->red,line->color->green, line->color->blue);
-
-		img.draw_line(roundToInt(newP1X),roundToInt(newP1Y),
-				roundToInt(newP2X), roundToInt(newP2Y),
-				lijnkleur);
+		if (ZBufferOn) {
+			//draw zbufferline;
+			draw_zbuff_line(buffer,img,roundToInt(newP1X),roundToInt(newP1Y),line->z1,roundToInt(newP2X),roundToInt(newP2Y),line->z2,lijnkleur);
+		} else {
+			img.draw_line(roundToInt(newP1X),roundToInt(newP1Y),
+							roundToInt(newP2X), roundToInt(newP2Y),
+							lijnkleur);
+		}
 	}
 	return img;
 }
+
+
 
 string replaceRule(string currentRule, unsigned int currentIteration, LParser::LSystem2D& lSystem) {
 	string replacedRule = "";
@@ -220,7 +328,7 @@ img::EasyImage generate2DLSys(const ini::Configuration &configuration) {
 
 	Lines2D lines2D = Lines2D(lines);
 
-	img::EasyImage img = draw2DLines(size,lines2D,backgroundColor);
+	img::EasyImage img = draw2DLines(size,lines2D,backgroundColor,false);
 
 	return img;
 }
@@ -241,12 +349,13 @@ img::EasyImage generate3DLines(const ini::Configuration &configuration) {
 		string currentFigureString = "Figure" + to_string(currentFigure);
 		vector<double> lijnkleurVector = configuration[currentFigureString]["color"].as_double_tuple_or_die();
 		Color* lijnkleur = new Color(lijnkleurVector[0]*255, lijnkleurVector[1]*255, lijnkleurVector[2]*255);
+		Figure3D* figuur;
 		if (configuration[currentFigureString]["type"].as_string_or_die() == "LineDrawing") {
 			vector<Vector3D> punten;
 			unsigned int nrPunten = configuration[currentFigureString]["nrPoints"].as_int_or_die();
 			unsigned int huidigPunt = 0;
 			while (huidigPunt < nrPunten) {
-				vector<double> puntVector = configuration[currentFigureString]["point"+(huidigPunt)].as_double_tuple_or_die();
+				vector<double> puntVector = configuration[currentFigureString]["point"+to_string(huidigPunt)].as_double_tuple_or_die();
 				Vector3D punt =  Vector3D::point(puntVector[0], puntVector[1], puntVector[2]);
 				punten.push_back(punt);
 				huidigPunt += 1;
@@ -260,144 +369,58 @@ img::EasyImage generate3DLines(const ini::Configuration &configuration) {
 				faces.push_back(face);
 				huidigeLijn += 1;
 			}
-			Figure3D* figuur = new Figure3D(punten,faces,lijnkleur);
-			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
-			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
-			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
-			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
-			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
-			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
-			figuur->translate(center);
-			figuren.addFigure(figuur);
-			currentFigure += 1;
+			figuur = new Figure3D(punten,faces,lijnkleur);
 		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "Tetrahedron") {
-			Figure3D* figuur = figuren.createTetrahedron(lijnkleur);
-			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
-			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
-			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
-			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
-			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
-			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
-			figuur->translate(center);
-			figuren.addFigure(figuur);
-			currentFigure += 1;
+			figuur = figuren.createTetrahedron(lijnkleur);
 		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "Cube") {
-			Figure3D* figuur = figuren.createCube(lijnkleur);
-			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
-			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
-			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
-			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
-			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
-			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
-			figuur->translate(center);
-			figuren.addFigure(figuur);
-			currentFigure += 1;
+			figuur = figuren.createCube(lijnkleur);
 		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "Octahedron") {
-			Figure3D* figuur = figuren.createOctahedron(lijnkleur);
-			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
-			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
-			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
-			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
-			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
-			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
-			figuur->translate(center);
-			figuren.addFigure(figuur);
-			currentFigure += 1;
+			figuur = figuren.createOctahedron(lijnkleur);
 		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "Icosahedron") {
-			Figure3D* figuur = figuren.createIcosahedron(lijnkleur);
-			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
-			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
-			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
-			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
-			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
-			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
-			figuur->translate(center);
-			figuren.addFigure(figuur);
-			currentFigure += 1;
+			figuur = figuren.createIcosahedron(lijnkleur);
 		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "Dodecahedron") {
-			Figure3D* figuur = figuren.createDodecahedron(lijnkleur);
-			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
-			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
-			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
-			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
-			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
-			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
-			figuur->translate(center);
-			figuren.addFigure(figuur);
-			currentFigure += 1;
+			figuur = figuren.createDodecahedron(lijnkleur);
 		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "Sphere") {
 			int n = configuration[currentFigureString]["n"].as_int_or_die();
-			Figure3D* figuur = figuren.createSphere(n,lijnkleur);
-			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
-			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
-			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
-			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
-			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
-			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
-			figuur->translate(center);
-			figuren.addFigure(figuur);
-			currentFigure += 1;
+			figuur = figuren.createSphere(n,lijnkleur);
 		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "Cone") {
 			int n = configuration[currentFigureString]["n"].as_int_or_die();
 			double height = configuration[currentFigureString]["height"].as_double_or_die();
-			Figure3D* figuur = figuren.createCone(n,height,lijnkleur);
-			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
-			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
-			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
-			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
-			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
-			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
-			figuur->translate(center);
-			figuren.addFigure(figuur);
-			currentFigure += 1;
+			figuur = figuren.createCone(n,height,lijnkleur);
 		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "Cylinder") {
 			int n = configuration[currentFigureString]["n"].as_int_or_die();
 			double height = configuration[currentFigureString]["height"].as_double_or_die();
-			Figure3D* figuur = figuren.createCylinder(n,height,lijnkleur);
-			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
-			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
-			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
-			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
-			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
-			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
-			figuur->translate(center);
-			figuren.addFigure(figuur);
-			currentFigure += 1;
+			figuur = figuren.createCylinder(n,height,lijnkleur);
 		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "Torus") {
 			double R = configuration[currentFigureString]["R"].as_double_or_die();
 			double r = configuration[currentFigureString]["r"].as_double_or_die();
 			int n = configuration[currentFigureString]["n"].as_int_or_die();
 			int m = configuration[currentFigureString]["m"].as_int_or_die();
-			Figure3D* figuur = figuren.createTorus(R,r,n,m,lijnkleur);
-			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
-			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
-			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
-			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
-			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
-			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
-			figuur->translate(center);
-			figuren.addFigure(figuur);
-			currentFigure += 1;
+			figuur = figuren.createTorus(R,r,n,m,lijnkleur);
 		} else if (configuration[currentFigureString]["type"].as_string_or_die() == "3DLSystem") {
 			string inputFile = configuration[currentFigureString]["inputfile"].as_string_or_die();
-			Figure3D* figuur = figuren.create3DLSystem(inputFile,lijnkleur);
-			figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
-			figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
-			figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
-			figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
-			vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
-			Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
-			figuur->translate(center);
-			figuren.addFigure(figuur);
-			currentFigure += 1;
+			figuur = figuren.create3DLSystem(inputFile,lijnkleur);
 		}
+		figuur->scaleFigure(configuration[currentFigureString]["scale"].as_double_or_die());
+		figuur->rotateX(configuration[currentFigureString]["rotateX"].as_double_or_die());
+		figuur->rotateY(configuration[currentFigureString]["rotateY"].as_double_or_die());
+		figuur->rotateZ(configuration[currentFigureString]["rotateZ"].as_double_or_die());
+		vector<double> centerVector = configuration[currentFigureString]["center"].as_double_tuple_or_die();
+		Vector3D center = Vector3D::vector(centerVector[0], centerVector[1], centerVector[2]);
+		figuur->translate(center);
+		figuren.addFigure(figuur);
+		currentFigure += 1;
 	}
-
 	Matrix eyePointMatrix = figuren.eyepointTrans(eyePoint);
 	figuren.applyTransformations(eyePointMatrix);
 	Lines2D projectie = figuren.doProjection();
-
-	return draw2DLines(size,projectie,backgroundColor);
+	if (configuration["General"]["type"].as_string_or_die() == "Wireframe") {
+		return draw2DLines(size,projectie,backgroundColor,false);
+	} else if (configuration["General"]["type"].as_string_or_die() == "ZBufferedWireframe") {
+		return draw2DLines(size,projectie,backgroundColor,true);
+	}
+	img::EasyImage img = img::EasyImage(10,10);
+	return img;
 }
 
 img::EasyImage generate_image(const ini::Configuration &configuration)
@@ -414,7 +437,7 @@ img::EasyImage generate_image(const ini::Configuration &configuration)
 		}
 	} else if (typeString == "2DLSystem") {
 		return generate2DLSys(configuration);
-	} else if (typeString == "Wireframe") {
+	} else if (typeString == "Wireframe" or typeString == "ZBufferedWireframe") {
 		return generate3DLines(configuration);
 	}
 	img::EasyImage img = img::EasyImage(10,10);

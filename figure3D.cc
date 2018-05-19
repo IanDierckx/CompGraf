@@ -143,12 +143,16 @@ Lines2D Figures3D::doProjection() {
 				unsigned int index2ePunt = currentIndex+1;
 				Point2D* p2 = doPointProjection(1,figure->points[face->getPointIndexes()[index2ePunt]]);
 				Line2D* lijn = new Line2D(p1,p2,figure->color);
+				lijn->z1 = figure->points[face->getPointIndexes()[currentIndex]].z;
+				lijn->z2 = figure->points[face->getPointIndexes()[index2ePunt]].z;
 				lines.push_back(lijn);
 				currentIndex += 1;
 			}
 			Point2D* p1 = doPointProjection(1,figure->points[face->getPointIndexes()[currentIndex]]);
 			Point2D* p2 = doPointProjection(1,figure->points[face->getPointIndexes()[0]]);
 			Line2D* lijn = new Line2D(p1,p2,figure->color);
+			lijn->z1 = figure->points[face->getPointIndexes()[currentIndex]].z;
+			lijn->z2 = figure->points[face->getPointIndexes()[0]].z;
 			lines.push_back(lijn);
 		}
 	}

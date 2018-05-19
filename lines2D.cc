@@ -29,6 +29,8 @@ Line2D::Line2D(Point2D*& point1, Point2D*& point2, Color*& col) {
 	p1 = point1;
 	p2 = point2;
 	color = col;
+	z1 = 0;
+	z2 = 0;
 }
 
 void Lines2D::addLine(Line2D* line2D) {
