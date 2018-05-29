@@ -26,10 +26,19 @@ void Face::addPoint(const int pointIndex) {
 	pointIndexes.push_back(pointIndex);
 }
 
-Figure3D::Figure3D(vector<Vector3D>& pointsVector, vector<Face*>& faceVector, Color*& col) {
+Figure3D::Figure3D(vector<Vector3D>& pointsVector, vector<Face*>& faceVector, Color*& ambientRefl, Color*& diffuseRefl) {
 	points = pointsVector;
 	faces = faceVector;
-	color = col;
+	ambientReflection = ambientRefl;
+	diffusereflection = diffuseRefl;
+	transformationsToApply = {};
+}
+
+Figure3D::Figure3D(vector<Vector3D>& pointsVector, vector<Face*>& faceVector, Color*& ambientRefl) {
+	points = pointsVector;
+	faces = faceVector;
+	ambientReflection = ambientRefl;
+	diffusereflection = new Color(0,0,0);
 	transformationsToApply = {};
 }
 
@@ -96,6 +105,16 @@ void Figure3D::applyTransformations() {
 	transformationsToApply = {};
 }
 
+vector<Face*> Figure3D::triangulateFace(Face*& face) {
+	vector<Face*> newFaces;
+	vector<int> pointIndexes = face->getPointIndexes();
+	for (unsigned int indexPoint = 1; indexPoint < pointIndexes.size()-1; ++indexPoint) {
+		Face* newFace = new Face({pointIndexes[0],pointIndexes[indexPoint],pointIndexes[indexPoint+1]});
+		newFaces.push_back(newFace);
+	}
+	return newFaces;
+}
+
 Matrix Figures3D::eyepointTrans(const Vector3D& eyepoint) {
 	eyeToPolar(eyepoint);
 	Matrix eyePointTransMatrx;
@@ -142,7 +161,7 @@ Lines2D Figures3D::doProjection() {
 				Point2D* p1 = doPointProjection(1,figure->points[face->getPointIndexes()[currentIndex]]);
 				unsigned int index2ePunt = currentIndex+1;
 				Point2D* p2 = doPointProjection(1,figure->points[face->getPointIndexes()[index2ePunt]]);
-				Line2D* lijn = new Line2D(p1,p2,figure->color);
+				Line2D* lijn = new Line2D(p1,p2,figure->ambientReflection);
 				lijn->z1 = figure->points[face->getPointIndexes()[currentIndex]].z;
 				lijn->z2 = figure->points[face->getPointIndexes()[index2ePunt]].z;
 				lines.push_back(lijn);
@@ -150,7 +169,7 @@ Lines2D Figures3D::doProjection() {
 			}
 			Point2D* p1 = doPointProjection(1,figure->points[face->getPointIndexes()[currentIndex]]);
 			Point2D* p2 = doPointProjection(1,figure->points[face->getPointIndexes()[0]]);
-			Line2D* lijn = new Line2D(p1,p2,figure->color);
+			Line2D* lijn = new Line2D(p1,p2,figure->ambientReflection);
 			lijn->z1 = figure->points[face->getPointIndexes()[currentIndex]].z;
 			lijn->z2 = figure->points[face->getPointIndexes()[0]].z;
 			lines.push_back(lijn);
@@ -433,8 +452,8 @@ Figure3D* Figures3D::createCylinder(const int n, const double h, Color*& col) {
 			faces.push_back(face);
 		} else if (faceNumber == n+1) {
 			Face* face = new Face();
-			for (int pointNumber = n-1; pointNumber >= 0; --pointNumber) {
-				face->addPoint(pointNumber+n);
+			for (int pointNumber = n; pointNumber <= 2*n-1; ++pointNumber) {
+				face->addPoint(pointNumber);
 			}
 			faces.push_back(face);
 		} else {
@@ -575,4 +594,14 @@ string Figures3D::replaceRule(string currentRule, unsigned int currentIteration,
 		replacedRule = replaceRule(replacedRule,currentIteration,lSystem);
 	}
 	return replacedRule;
+}
+
+void Figures3D::deleteFigure(Figure3D*& figureToDelete) {
+	for (auto figure:figures) {
+		if (figure == figureToDelete) {
+			figures.erase(find(figures.begin(),figures.end(),figure));
+			delete figureToDelete;
+			break;
+		}
+	}
 }

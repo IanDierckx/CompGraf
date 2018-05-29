@@ -41,9 +41,12 @@ private:
 public:
 	vector<Vector3D> points;
 	vector<Face*> faces;
-	Color* color;
+	Color* ambientReflection;
+	Color* diffusereflection;
 
-	Figure3D(vector<Vector3D>& pointsVector, vector<Face*>& faceVector, Color*& color);
+	Figure3D(vector<Vector3D>& pointsVector, vector<Face*>& faceVector, Color*& ambientRefl, Color*& diffuseRefl);
+
+	Figure3D(vector<Vector3D>& pointsVector, vector<Face*>& faceVector, Color*& ambientRefl);
 
 	void scaleFigure(const double scale);
 
@@ -56,6 +59,8 @@ public:
 	void translate(const Vector3D& vector);
 
 	void applyTransformations();
+
+	vector<Face*> triangulateFace(Face*& face);
 };
 
 class Figures3D {
@@ -102,6 +107,8 @@ public:
 	Figure3D* createTorus(const double R, const double r, const int n, const int m, Color*& col);
 
 	Figure3D* create3DLSystem(string inputfile, Color*& col);
+
+	void deleteFigure(Figure3D*& figureToDelete);
 };
 
 #endif /* FIGURE3D_H_ */
