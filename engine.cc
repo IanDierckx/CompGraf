@@ -320,8 +320,8 @@ void drawZBuffTriangle(ZBuffer*& buffer,img::EasyImage& img, Vector3D const &A, 
 
 img::EasyImage draw2DLines(const int size, Lines2D& lines, img::Color backgroundColor, bool ZBufferOn) {
 	vector<double> maxmin = lines.getMinMax();
-	double maxX = maxmin[0];
-	double maxY = maxmin[1];
+	double maxX = maxmin[0]+.5;
+	double maxY = maxmin[1]+.5;
 	double minX = maxmin[2];
 	double minY = maxmin[3];
 	double xrange = maxX-minX;
@@ -387,7 +387,12 @@ string replaceRule(string currentRule, unsigned int currentIteration, LParser::L
 vector<Line2D*> parse_rule(LParser::LSystem2D& lSystem, vector<double> currentPoint, Color* lijnkleur, double current_angle, double angle_change) {
 	vector<Line2D*> lines;
 	string startRule = lSystem.get_initiator();
-	string rule = replaceRule(startRule,0,lSystem);
+	string rule = "";
+	if (lSystem.get_nr_iterations() == 0) {
+		rule = startRule;
+	} else {
+		rule = replaceRule(startRule,0,lSystem);
+	}
 	double currentX = currentPoint[0];
 	double currentY = currentPoint[1];
 	double angleRightNow = current_angle;
