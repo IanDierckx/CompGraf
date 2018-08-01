@@ -320,10 +320,16 @@ void drawZBuffTriangle(ZBuffer*& buffer,img::EasyImage& img, Vector3D const &A, 
 
 img::EasyImage draw2DLines(const int size, Lines2D& lines, img::Color backgroundColor, bool ZBufferOn) {
 	vector<double> maxmin = lines.getMinMax();
-	double maxX = maxmin[0]+.5;
-	double maxY = maxmin[1]+.5;
+	double maxX = maxmin[0];
+	double maxY = maxmin[1];
 	double minX = maxmin[2];
 	double minY = maxmin[3];
+	if (maxX == 0) {
+		maxX+=0.001;
+	}
+	if (maxY == 0) {
+		maxY+=0.001;
+	}
 	double xrange = maxX-minX;
 	double yrange = maxY-minY;
 	double imageX = size*(xrange/max(xrange,yrange));
@@ -557,7 +563,7 @@ img::EasyImage generate3DLines(const ini::Configuration &configuration) {
 			unsigned int nrLijnen = configuration[currentFigureString]["nrLines"].as_int_or_die();
 			unsigned int huidigeLijn = 0;
 			while (huidigeLijn < nrLijnen) {
-				vector<int> faceVector = configuration[currentFigureString]["line"+(huidigeLijn)].as_int_tuple_or_die();
+				vector<int> faceVector = configuration[currentFigureString]["line"+to_string(huidigeLijn)].as_int_tuple_or_die();
 				Face* face = new Face(faceVector);
 				faces.push_back(face);
 				huidigeLijn += 1;
