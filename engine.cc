@@ -663,6 +663,12 @@ img::EasyImage generate3DLines(const ini::Configuration &configuration) {
 			lights.addLight(newLight);
 			currentLight++;
 		}
+	} else {
+		Color* ambientLight = new Color(1,1,1);
+		Color* diffuseLight = new Color(0,0,0);
+		Vector3D direction = Vector3D::vector(0,0,0);
+		Light* newLight = new Light(ambientLight, diffuseLight,direction,true);
+		lights.addLight(newLight);
 	}
 	if (typeString == "Wireframe") {
 		return draw2DLines(size,projectie,backgroundColor,false);
